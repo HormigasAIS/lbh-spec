@@ -1,0 +1,43 @@
+// ==========================================================
+// PROTOCOLO DE CONTINGENCIA Y MANDO SOBERANO LBH-001
+// ==========================================================
+// NOTA: Reemplazar HORMIGASAIS_SOVEREIGN_SIGNATURE_XXXX con 
+// el HMAC real derivado de la clave maestra del Fundador.
+
+DEFINE T_CRITICO = 100ms;
+DEFINE LBH_KEY = "SHA256:HORMIGASAIS_SOVEREIGN_SIGNATURE_XXXX";
+
+CHECK pulse_inbound {
+    IF (pulse_received == 1) {
+        SET status = "SYNC_CLOUD";
+        SYNC_FEROMONA_GLOBAL();
+    } 
+    ELSE {
+        WAIT T_CRITICO;
+        IF (pulse_received == 0) {
+            INITIATE_SOVEREIGNTY();
+        }
+    }
+}
+
+FUNCTION INITIATE_SOVEREIGNTY() {
+    SET agent_mode = "MASTER_LOCAL";
+    SET security_level = "MAXIMUM_EDGE";
+
+    // Validación obligatoria para auditoría
+    VALIDATE_IDENTITY(LBH_KEY);
+
+    IO_CONTROL_LOCAL(ALL_PORTS, "OWNED_BY_AGENT");
+    POWER_MANAGEMENT("LOW_CONSUMPTION_MODE");
+
+    EXECUTE sovereign_001.bin;
+
+    EMIT feromona_emergencia {
+        type: "NODO_AISLADO_PERO_ACTIVO",
+        origin: self.agent_id,
+        mode: "MESH_SEEKING",
+        timestamp: GET_TIME_STAMP()
+    };
+    
+    LOG("Soberanía activada: Fallback coherente con CONSENSUS.md (A16 operativo)");
+}
