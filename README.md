@@ -24,18 +24,19 @@ LBH (Lenguaje Binario HormigasAIS) es un protocolo de comunicación diseñado pa
 ## Documentos de Especificación
 
 | Documento | Descripción | Estado |
-|-----------|------------|--------|
+|------------|------------|--------|
 | WIRE_FORMAT.md | Formato de mensaje, firma y validación | v1.0 |
-| CONSENSUS.md   | Consenso BLE físico + Raft lógico     | v1.0 |
-| CRYPTO.md      | AES-256-GCM + HMAC-SHA256             | v1.0 |
-| GOVERNANCE.md  | Contratos LBH y gobernanza soberana   | v1.0 |
-| VERIFICATION.md| Guía de auditoría externa             | v1.0 |
+| CONSENSUS.md | Consenso BLE físico + Raft lógico | v1.0 |
+| CRYPTO.md | AES-256-GCM + HMAC-SHA256 | v1.0 |
+| GOVERNANCE.md | Contratos LBH y gobernanza soberana | v1.0 |
+| VERIFICATION.md | Guía de auditoría externa | v1.0 |
 
 ---
 
 ## Inicio Rápido — Verificar un Mensaje LBH
 
-import hmac, hashlib
+import hmac
+import hashlib
 
 def verify_lbh(message: str, shared_key: bytes) -> bool:
     try:
@@ -44,13 +45,18 @@ def verify_lbh(message: str, shared_key: bytes) -> bool:
             return False
 
         payload = parts[0].replace("LBH_DATA:", "")
-        ts      = parts[1].replace("TS:", "")
-        sig_rx  = parts[2].replace("SIG:", "")
+        ts = parts[1].replace("TS:", "")
+        sig_rx = parts[2].replace("SIG:", "")
 
-        content  = f"{payload}|{ts}".encode("utf-8")
-        sig_calc = hmac.new(shared_key, content, hashlib.sha256).hexdigest()[:16]
+        content = f"{payload}|{ts}".encode("utf-8")
+        sig_calc = hmac.new(
+            shared_key,
+            content,
+            hashlib.sha256
+        ).hexdigest()[:16]
 
         return hmac.compare_digest(sig_rx, sig_calc)
+
     except Exception:
         return False
 
@@ -75,17 +81,34 @@ DOI: 10.5281/zenodo.17767205
 
 ## Historial
 
-Versión 1.0.0
-Fecha: 2026-02-22
-Cambio: Especificación inicial auditable — todos los documentos
+Versión 1.0.0  
+Fecha: 2026-02-22  
+Cambio: Especificación inicial auditable — todos los documentos.
 
 ---
 
 ## Fundador
 
-Cristhiam Leonardo Hernández Quiñonez (CLHQ)
-Organización: HormigasAIS — El Salvador
-Protocolo: lbh.human
+Cristhiam Leonardo Hernández Quiñonez (CLHQ)  
+Organización: HormigasAIS — El Salvador  
+Protocolo: lbh.human  
 
-© 2026 HormigasAIS
-Especificación bajo licencia CC-BY-4.0.
+---
+
+## License
+
+This specification is licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+In addition, attribution requirements and philosophical principles specific to the LBH protocol are defined in the MESENTERY License v1.0.
+
+You may:
+- Share — copy and redistribute the material in any medium or format.
+- Adapt — remix, transform, and build upon the material for any purpose, including commercial use.
+
+Under the following condition:
+- Attribution — You must give appropriate credit to the original authorship, reference the LBH protocol name, and include the DOI when applicable.
+
+For full legal terms, see the LICENSE file.
+
+© 2026 HormigasAIS — El Salvador  
+Digital Pheromones — Distributed Sovereignty
