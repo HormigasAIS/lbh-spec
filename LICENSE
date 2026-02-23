@@ -3,28 +3,32 @@ HormigasAIS Sovereign Specification License
 Copyright (c) 2026 Cristhiam Leonardo Hernández Quiñonez
 Organization: HormigasAIS
 
-1. Base License
-This work is released under the Creative Commons Attribution 4.0 International (CC BY 4.0).
-Full terms: https://creativecommons.org/licenses/by/4.0/
+1. LEGAL BASE
+This work is licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0).
+To view a copy of this license, visit: https://creativecommons.org/licenses/by/4.0/
 
-2. MESENTERY Attribution Clause
-Attribution must include:
-- The name of the original protocol: LBH (Lenguaje Binario HormigasAIS)
-- The name of the founder: Cristhiam Leonardo Hernández Quiñonez
-- Reference to the original repository or DOI: 10.5281/zenodo.17767205
+2. MANDATORY ATTRIBUTION (MESENTERY Clause)
+Pursuant to the "Attribution" section of CC BY 4.0, any distribution or derivative work must 
+prominently credit the original authorship as follows:
+- Protocol Name: LBH (Lenguaje Binario HormigasAIS)
+- Founder: Cristhiam Leonardo Hernández Quiñonez
+- Reference: DOI 10.5281/zenodo.17767205
 
-3. Structural Integrity Clause
-Derivative specifications must clearly document modifications. Misrepresentation of authorship or origin of the LBH protocol is prohibited.
+3. SOVEREIGNTY PRINCIPLE
+The LBH protocol is architected for distributed edge sovereignty. Users are encouraged to 
+maintain the decentralized nature of the implementation. No party shall claim exclusive 
+centralized ownership of the LBH specification itself.
 
-4. Ethical Use Declaration
-This specification may not be used for:
+4. ETHICAL INTENT STATEMENT (Non-Binding)
+The author strongly discourages the use of this specification for:
 - Intentional harm to civilian populations.
 - Surveillance systems designed to violate fundamental human rights.
-- Covert weaponized autonomous systems.
+- Development of covert weaponized autonomous systems.
+This clause expresses the ethical philosophy of the HormigasAIS community and the 
+"Mesentery" connective framework.
 
-5. Sovereignty Principle
-The LBH protocol is designed for distributed edge sovereignty. Implementations must not falsely claim centralized ownership of the protocol itself.
+5. PHILOSOPHICAL DEFINITION
+The name “MESENTERY” represents the structural connective philosophy of HormigasAIS: 
+A living system that connects, nourishes, and sustains distributed nodes without domination.
 
-The name “MESENTERY” represents the structural connective philosophy: A living system that connects, nourishes, and sustains without domination.
-
-© 2026 HormigasAIS
+© 2026 HormigasAIS — El Salvador.
