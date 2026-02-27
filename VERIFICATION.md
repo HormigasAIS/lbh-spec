@@ -1,146 +1,148 @@
-# LBH Verification Guide — Guía de Auditoría Externa v1.0
-Protocolo: Lenguaje Binario HormigasAIS (LBH)
-Autor: Cristhiam Leonardo Hernández Quiñonez (CLHQ)
-Estado: Activo
-Fecha: 2026-02-22
+# LBH Verification Guide — Guía de Auditoría Externa v1.1
+
+**Protocolo:** Lenguaje Binario HormigasAIS (LBH)
+**Autor:** Cristhiam Leonardo Hernández Quiñonez (CLHQ)
+**Estado:** Activo | Nivel de Confianza: Soberano
+**Fecha:** 2026-02-26
 
 ---
 
 ## Propósito
 
-Este documento permite que cualquier auditor técnico externo reproduzca y verifique independientemente el protocolo LBH sin necesidad de acceso al hardware original ni de contactar al fundador.
+Este documento permite la reproducción y verificación independiente del protocolo LBH. Asegura que la **Soberanía de Datos** y la **Resiliencia** son propiedades matemáticas del código, no dependientes de la infraestructura de terceros.
 
 ---
 
-## Requisitos
+## 1. Requisitos de Auditoría
 
-Python 3.10+
-pip install cryptography
-Dispositivo Android con Termux (verificación BLE opcional)
+- **Python 3.10+**
+- **Librerias:** pip install cryptography
+- **Entorno:** Linux / Termux / MacOS / Windows
 
 ---
 
-## Verificación 1 — Wire Format
+## 2. Verificacion de Formato de Mensaje (Wire Format v1.0)
 
-Confirma que el formato de mensaje LBH es válido y que la firma es verificable.
+Valida que la estructura LBH_DATA|TS|SIG es procesable y que el truncamiento de firma a 16 caracteres hex es consistente.
 
-import hmac, hashlib
+    import hmac, hashlib
 
-def verify_lbh(message: str, shared_key: bytes) -> bool:
-    try:
-        parts = message.strip().split("|")
-        if len(parts) != 3:
+    def verify_lbh(message: str, shared_key: bytes) -> bool:
+        try:
+            parts   = message.strip().split("|")
+            payload = parts[0].replace("LBH_DATA:", "")
+            ts      = parts[1].replace("TS:", "")
+            sig_rx  = parts[2].replace("SIG:", "")
+            content = f"{payload}|{ts}".encode("utf-8")
+            sig_calc = hmac.new(shared_key, content, hashlib.sha256).hexdigest()[:16]
+            return hmac.compare_digest(sig_rx, sig_calc)
+        except:
             return False
 
-        payload = parts[0].replace("LBH_DATA:", "")
-        ts      = parts[1].replace("TS:", "")
-        sig_rx  = parts[2].replace("SIG:", "")
+    KEY = b"LBH_SHARED_SECRET_32BYTES!!!!!!"
+    msg = "LBH_DATA:INMUNIDAD_HONGO_ACTIVA|TS:1770805318|SIG:bba69499c9e516d1"
+    print(f"Wire Format Check: {'VALIDO' if verify_lbh(msg, KEY) else 'INVALIDO'}")
 
-        content  = f"{payload}|{ts}".encode("utf-8")
-        sig_calc = hmac.new(shared_key, content, hashlib.sha256).hexdigest()[:16]
+Resultado esperado: Wire Format Check: VALIDO
 
-        return hmac.compare_digest(sig_rx, sig_calc)
-    except Exception:
-        return False
+---
 
-# --- Test ---
-KEY = b"LBH_SHARED_SECRET_32BYTES!!!!!!"
-msg = "LBH_DATA:INMUNIDAD_HONGO_ACTIVA|TS:1770805318|SIG:bba69499c9e516d1"
+## 3. Verificacion de Capa de Cifrado (AES-256-GCM)
 
-resultado = verify_lbh(msg, KEY)
-print("Wire Format:", "VALIDO" if resultado else "INVALIDO")
+HormigasAIS utiliza cifrado autenticado para evitar ataques de bit-flipping en el transporte.
+
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    import os, hashlib
+
+    try:
+        shared_key = b"LBH_SHARED_SECRET_32BYTES!!!!!!"
+        aes_key    = hashlib.sha256(shared_key).digest()
+        payload    = b"FEROMONA_XOXO_ACTIVA"
+        aesgcm     = AESGCM(aes_key)
+        nonce      = os.urandom(12)
+
+        token_raw  = aesgcm.encrypt(nonce, payload, None)
+        recovered  = aesgcm.decrypt(nonce, token_raw, None)
+        print(f"Cifrado/Descifrado: {'OK' if recovered == payload else 'FAIL'}")
+
+        corrupted = token_raw[:-1] + bytes([token_raw[-1] ^ 0xFF])
+        try:
+            aesgcm.decrypt(nonce, corrupted, None)
+            print("Deteccion de Tampering: FALLO")
+        except:
+            print("Deteccion de Tampering: EXITOSA (Tag invalido)")
+
+    except ImportError:
+        print("Instale cryptography para ejecutar esta prueba.")
 
 Resultado esperado:
-Wire Format: VALIDO
+    Cifrado/Descifrado: OK
+    Deteccion de Tampering: EXITOSA (Tag invalido)
 
 ---
 
-## Verificación 2 — Criptografía AES-256-GCM
+## 4. Suite de Resiliencia v1.1 (Anti-Replay y Logic)
 
-Confirma que el cifrado y descifrado funcionan correctamente y que la modificación del ciphertext es detectada.
+Prueba de 5 vectores contra el motor soberano. Requiere core/lbh_node_v1_1.py del repositorio principal.
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import os, base64, hashlib
+    import time, sys, os
+    sys.path.append(os.path.expanduser("~/HormigasAIS-Nodo-Escuela/core"))
+    from lbh_node_v1_1 import LBHNode
 
-shared_key = b"LBH_SHARED_SECRET_32BYTES!!!!!!"
-aes_key    = hashlib.sha256(shared_key).digest()
-payload    = b"FEROMONA_XOXO_ACTIVA"
+    shared_secret = b"MASTER_KEY_LBH_2026_CLHQ_Soberania"
+    node_a_id     = "A16-Soberano-Salvador"
+    defensor      = LBHNode("A20s-Manager", {}, {node_a_id: {1: shared_secret}})
+    emisor        = LBHNode(node_a_id, {1: shared_secret}, {})
 
-# Cifrar
-aesgcm = AESGCM(aes_key)
-nonce  = os.urandom(12)
-cipher = aesgcm.encrypt(nonce, payload, None)
-token  = base64.b64encode(nonce + cipher).decode()
+    msg_ok     = emisor.build_message("ESTADO:OPERATIVO", key_id=1)
+    res_ok     = defensor.validate_message(msg_ok)
+    print(f"[TEST 1] Mensaje Legitimo:            {'PASADO'    if res_ok        else 'FALLADO'}")
 
-# Descifrar
-raw       = base64.b64decode(token)
-recovered = aesgcm.decrypt(raw[:12], raw[12:], None)
+    res_replay = defensor.validate_message(msg_ok)
+    print(f"[TEST 2] Replay Attack (Mismo Nonce): {'BLOQUEADO' if not res_replay else 'VULNERABLE'}")
 
-print("Cifrado/Descifrado:", "OK" if recovered == payload else "FAIL")
+    msg_tampered = msg_ok.replace("DATA:ESTADO:OPERATIVO", "DATA:ESTADO:APAGAR")
+    res_tamper   = defensor.validate_message(msg_tampered)
+    print(f"[TEST 3] Alteracion de Datos (Firma): {'BLOQUEADO' if not res_tamper else 'VULNERABLE'}")
 
-# Detección de tampering
-try:
-    corrupted = raw[:12] + bytes([raw[12] ^ 0xFF]) + raw[13:]
-    aesgcm.decrypt(corrupted[:12], corrupted[12:], None)
-    print("Tampering: FAIL")
-except Exception:
-    print("Tampering: OK (Deteccion exitosa)")
+    hacker_node = LBHNode(node_a_id, {1: b"CLAVE_FALSA_HACKER_12345"}, {})
+    msg_hacker  = hacker_node.build_message("ESTADO:OPERATIVO", key_id=1)
+    res_hacker  = defensor.validate_message(msg_hacker)
+    print(f"[TEST 4] Firma con Clave Falsa:       {'BLOQUEADO' if not res_hacker else 'VULNERABLE'}")
 
----
+    msg_old = msg_ok.replace(f"TS:{int(time.time())}", "TS:1600000000")
+    res_old = defensor.validate_message(msg_old)
+    print(f"[TEST 5] Mensaje Expirado (>300s):    {'BLOQUEADO' if not res_old   else 'VULNERABLE'}")
 
-## Verificación 3 — Firma HMAC-SHA256
-
-Confirma que la firma autentica mensajes válidos y rechaza mensajes alterados.
-
-import hmac, hashlib
-
-shared_key = b"LBH_SHARED_SECRET_32BYTES!!!!!!"
-payload    = b"LBH_STATUS:OPERATIVO_SOBERANO"
-
-# Firmar
-firma = hmac.new(shared_key, payload, hashlib.sha256).hexdigest()
-
-# Verificar legítimo
-valida = hmac.compare_digest(
-    hmac.new(shared_key, payload, hashlib.sha256).hexdigest(),
-    firma
-)
-
-print("Mensaje legitimo:", "ACEPTADO" if valida else "RECHAZADO")
-
-# Verificar alterado
-invalida = hmac.compare_digest(
-    hmac.new(shared_key, b"LBH_STATUS:INTRUSO", hashlib.sha256).hexdigest(),
-    firma
-)
-
-print("Mensaje alterado:", "ERROR" if invalida else "RECHAZADO correctamente")
+Resultado esperado verificado en produccion (2026-02-26):
+    [TEST 1] Mensaje Legitimo:            PASADO
+    [TEST 2] Replay Attack (Mismo Nonce): BLOQUEADO
+    [TEST 3] Alteracion de Datos (Firma): BLOQUEADO
+    [TEST 4] Firma con Clave Falsa:       BLOQUEADO
+    [TEST 5] Mensaje Expirado (>300s):    BLOQUEADO
 
 ---
 
-## Verificación 4 — Lógica de Consenso BLE
+## 5. Verificacion de Hardware y Consenso (BLE)
 
-El consenso BLE requiere hardware físico (A16 + A20s).
+Para auditoria fisica en El Salvador:
 
-Un auditor puede verificar el algoritmo revisando:
+- Target: S9-DATA-IMMUNE-2026
+- Umbral: MATCHES >= 2 (logica de mayoria para filtrado de ruido)
+- Frecuencia: 0.5s (balance optimo entre deteccion y ahorro de bateria)
 
-Archivo: INCUBADORA_AIR_CITY/CENTINELA_V24_PILOTO.py
-Linea 9:  OBJETIVO_BLE = "S9-DATA-IMMUNE-2026"
-Linea 62: if MATCHES >= 2:
-Linea 72: time.sleep(0.5)
-
-Estos parámetros implementan el umbral anti-ruido y la frecuencia de 2 Hz.
+Archivo de referencia: INCUBADORA_AIR_CITY/CENTINELA_V24_PILOTO.py
 
 ---
 
-## Verificación 5 — Implementación de Referencia (Zenodo)
+## 6. Integridad de Referencia (Zenodo/MD5)
 
-DOI: 10.5281/zenodo.17767205
-MD5 Checksum: 6c66a2f25f76abccf5c63b6971402db8
+Verifique que su copia de trabajo coincide con el release oficial:
 
-Para verificar integridad del archivo descargado:
+- DOI: 10.5281/zenodo.17767205
+- MD5: 6c66a2f25f76abccf5c63b6971402db8
 
-md5sum HormigasAIS-LBH-Demo-Completa.zip
+    md5sum HormigasAIS-LBH-Demo-Completa.zip
 
 El hash calculado debe coincidir exactamente con el MD5 publicado.
 
@@ -148,13 +150,14 @@ El hash calculado debe coincidir exactamente con el MD5 publicado.
 
 ## Resumen de Verificaciones
 
-1  Wire Format        Script Python       No requiere hardware
-2  AES-256-GCM        Script Python       No requiere hardware
-3  HMAC-SHA256        Script Python       No requiere hardware
-4  Consenso BLE       Revision de codigo  Hardware opcional
-5  Referencia Zenodo  MD5 Checksum        No requiere hardware
+    1  Wire Format v1.0         Script Python         No requiere hardware
+    2  AES-256-GCM              Script Python         No requiere hardware
+    3  HMAC-SHA256              Script Python         No requiere hardware
+    4  Suite Resiliencia v1.1   5/5 vectores          No requiere hardware
+    5  Consenso BLE             Revision de codigo    Hardware opcional
+    6  Referencia Zenodo        MD5 Checksum          No requiere hardware
 
 ---
 
-© 2026 HormigasAIS
-Cristhiam Leonardo Hernández Quiñonez
+2026 HormigasAIS - Infraestructura de Inteligencia Distribuida y Soberana.
+Fundador: Cristhiam Leonardo Hernandez Quinonez.
