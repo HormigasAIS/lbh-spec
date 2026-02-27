@@ -120,3 +120,39 @@ Esto protege contra ataques de secuestro de clave automatizado.
 
 2026 HormigasAIS - Cristhiam Leonardo Hernandez Quinonez
 Rama: v1.1-dev — No fusionar a main hasta completar auditoria interna
+
+---
+
+## Apendice — Lista de Revocacion (CRL-LBH)
+
+Cuando una clave es comprometida, el LBH-MASTER emite una entrada
+en la lista de revocacion:
+
+    REVOKED_KEYS = {
+        "A16-Soberano-Salvador": {
+            1: {
+                "revoked_at": 1770805318,
+                "reason": "Compromiso de clave",
+                "revoked_by": "LBH-MASTER-CLHQ"
+            }
+        }
+    }
+
+Un nodo que recibe un mensaje firmado con KEY_ID revocado lo rechaza
+inmediatamente sin importar que la firma sea matematicamente valida.
+
+Politica de rechazo inmediato:
+    if key_id in REVOKED_KEYS.get(node_id, {}):
+        return False  # Clave revocada — BLOCKED
+
+---
+
+## Nota sobre Modelo de Autoridad
+
+LBH es jerarquico por diseno consciente, no distribuido puro.
+La autoridad del LBH-MASTER sobre rotacion de claves es una decision
+deliberada para infraestructura soberana donde existe responsabilidad
+humana explicita sobre cada nodo.
+
+Esto no impide federacion futura — pero en v1.1 la autoridad de
+rotacion reside en el LBH-MASTER.
